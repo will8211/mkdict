@@ -7,9 +7,15 @@ from datetime import datetime
 import MySQLdb
 import xlwt
 
+import dotenv
+
+dotenv.load_dotenv()
+
+passwd = dotenv.get_key('.env', 'MYSQL_PASSWORD')
+
 # Connect to database in SQL
 
-conn = MySQLdb.connect(host="localhost", user='root', passwd='iamafish', 
+conn = MySQLdb.connect(host="localhost", user='root', passwd=passwd, 
                        db='mkdictionary', charset='utf8')
 cursor = conn.cursor()
 SQL = cursor.execute

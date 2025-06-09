@@ -6,6 +6,12 @@ import random
 import xlrd
 from romanization import *
 
+import dotenv
+
+dotenv.load_dotenv()
+
+passwd = dotenv.get_key('.env', 'MYSQL_PASSWORD')
+
 # Import dictionary from xls file 
 
 print('Importing xls file...')
@@ -15,7 +21,7 @@ mk_sheet = mk_dict.sheet_by_index(0)
 
 # Connect to database in SQL
 
-conn = MySQLdb.connect(host="localhost", user='root', passwd='iamafish', 
+conn = MySQLdb.connect(host="localhost", user='root', passwd=passwd, 
                        db='mkdictionary', charset='utf8')
 cursor = conn.cursor()
 SQL = cursor.execute

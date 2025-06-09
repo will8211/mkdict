@@ -4,12 +4,17 @@ import MySQLdb
 import random
 from romanization import *
 from moe_dict import moe_dict
+import dotenv
+
+dotenv.load_dotenv()
+
+passwd = dotenv.get_key('.env', 'MYSQL_PASSWORD')
 
 print('Moving on to the MOE dictionary...')
 
 # Connect to database in SQL
 
-conn = MySQLdb.connect(host="localhost", user='root', passwd='iamafish', 
+conn = MySQLdb.connect(host="localhost", user='root', passwd=passwd, 
                        db='mkdictionary', charset='utf8mb4')
 cursor = conn.cursor()
 SQL = cursor.execute
