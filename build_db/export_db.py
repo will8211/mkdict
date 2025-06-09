@@ -4,19 +4,19 @@
 
 from datetime import datetime
 
+import dotenv
 import MySQLdb
 import xlwt
 
-import dotenv
-
 dotenv.load_dotenv()
 
-passwd = dotenv.get_key('.env', 'MYSQL_PASSWORD')
+passwd = dotenv.get_key(".env", "MYSQL_PASSWORD")
 
 # Connect to database in SQL
 
-conn = MySQLdb.connect(host="localhost", user='root', passwd=passwd, 
-                       db='mkdictionary', charset='utf8')
+conn = MySQLdb.connect(
+    host="localhost", user="root", passwd=passwd, db="mkdictionary", charset="utf8"
+)
 cursor = conn.cursor()
 SQL = cursor.execute
 
@@ -27,7 +27,8 @@ sheet1 = book.add_sheet("Sheet1")
 
 # Column headings
 
-cols = ["Type",
+cols = [
+    "Type",
     "Chinese",
     "English",
     "POJ",
@@ -36,7 +37,8 @@ cols = ["Type",
     "POJ_numbers",
     "TRS_numbers",
     "DT_numbers",
-    "Tai_char"]
+    "Tai_char",
+]
 
 row = sheet1.row(0)
 for index, col in enumerate(cols):
@@ -49,10 +51,10 @@ data = cursor.fetchone()
 length = data[0]
 
 for num in range(1, length):
-    db_num = num+1
+    db_num = num + 1
 
     if not db_num % 1000:
-        print(db_num, 'of', length)
+        print(db_num, "of", length)
 
     row = sheet1.row(num)
     for index, col in enumerate(cols):

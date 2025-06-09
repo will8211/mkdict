@@ -1,35 +1,38 @@
 #!/usr/bin/env python3
 
-import MySQLdb
 import pickle
 import random
-import xlrd
-from romanization import *
 
 import dotenv
+import MySQLdb
+import xlrd
+
+from romanization import *
 
 dotenv.load_dotenv()
 
-passwd = dotenv.get_key('.env', 'MYSQL_PASSWORD')
+passwd = dotenv.get_key(".env", "MYSQL_PASSWORD")
 
-# Import dictionary from xls file 
+# Import dictionary from xls file
 
-print('Importing xls file...')
+print("Importing xls file...")
 
 mk_dict = xlrd.open_workbook("Mkdictionary.xls")
 mk_sheet = mk_dict.sheet_by_index(0)
 
 # Connect to database in SQL
 
-conn = MySQLdb.connect(host="localhost", user='root', passwd=passwd, 
-                       db='mkdictionary', charset='utf8')
+conn = MySQLdb.connect(
+    host="localhost", user="root", passwd=passwd, db="mkdictionary", charset="utf8"
+)
 cursor = conn.cursor()
 SQL = cursor.execute
 
-# (Re)create table 
+# (Re)create table
 
 SQL("DROP TABLE IF EXISTS Dict")
-SQL("""
+SQL(
+    """
     CREATE TABLE Dict (
     Id          INT          UNSIGNED NOT NULL AUTO_INCREMENT,
     Type        BOOLEAN      NOT NULL,
@@ -47,69 +50,87 @@ SQL("""
     Code        CHAR(4)      NOT NULL,
     Tai_char    VARCHAR(256) CHARACTER SET utf8 COLLATE utf8_unicode_ci,
     PRIMARY KEY (id))
-    """) # ENGINE=MyISAM (at the very end)
+    """
+)  # ENGINE=MyISAM (at the very end)
 
 
 SQL("ALTER TABLE Dict AUTO_INCREMENT = 2")
 
 # Populate MySQL database
 
-base64 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+base64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 used_codes = []
 
-with open('combo_wins.pkl', 'rb') as f:
+with open("combo_wins.pkl", "rb") as f:
     tai_chars = pickle.load(f)
 
 for i in range(1, mk_sheet.nrows):
     if i % 2000 == 0:
-        print('Writing row %d to mySQL table' % i)
+        print("Writing row %d to mySQL table" % i)
     r = mk_sheet.row(i)
-    boolean = int(r[1].value.startswith('::'))
-    
-    #Escape single-quotes
+    boolean = int(r[1].value.startswith("::"))
+
+    # Escape single-quotes
     r[3].value = r[3].value.replace("'", "''")
-    #Amend Taiwanese
-    r[1].value = r[1].value.replace('::', '')
-    r[1].value = r[1].value.replace('::', '')
-    r[1].value = r[1].value.replace('9', '2')
-    #Chinese punctiation police!
-    r[2].value = r[2].value.replace(' ,', '，')
-    r[2].value = r[2].value.replace(' (', '（')
-    r[2].value = r[2].value.replace(' )', '）')
-    r[2].value = r[2].value.replace('!', '！')
-    r[2].value = r[2].value.replace('?', '？')
-    
+    # Amend Taiwanese
+    r[1].value = r[1].value.replace("::", "")
+    r[1].value = r[1].value.replace("::", "")
+    r[1].value = r[1].value.replace("9", "2")
+    # Chinese punctiation police!
+    r[2].value = r[2].value.replace(" ,", "，")
+    r[2].value = r[2].value.replace(" (", "（")
+    r[2].value = r[2].value.replace(" )", "）")
+    r[2].value = r[2].value.replace("!", "！")
+    r[2].value = r[2].value.replace("?", "？")
+
     poj, poj_search, poj_numbers = poj_convert(r[1].value)
     trs, trs_search, trs_numbers = trs_convert(r[1].value)
     dt, dt_search, dt_numbers = dt_convert(r[1].value)
-    
+
     looking = True
     while looking:
-        code = ''.join(random.choice(base64) for n in range(4))
+        code = "".join(random.choice(base64) for n in range(4))
         if code not in used_codes:
             looking = False
     used_codes.append(code)
 
     try:
-        tai_char = tai_chars[i+1]
+        tai_char = tai_chars[i + 1]
     except KeyError:
         tai_char = None
 
-    SQL("""
+    SQL(
+        """
         INSERT INTO Dict (Type, Chinese, English, POJ, TRS, DT, 
                           POJ_search, TRS_search, DT_search,
                           POJ_numbers, TRS_numbers, DT_numbers, Code, Tai_char)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (boolean, r[2].value, r[3].value, poj, trs, dt, 
-              poj_search, trs_search, dt_search, 
-              poj_numbers, trs_numbers, dt_numbers, code, tai_char))
+        """,
+        (
+            boolean,
+            r[2].value,
+            r[3].value,
+            poj,
+            trs,
+            dt,
+            poj_search,
+            trs_search,
+            dt_search,
+            poj_numbers,
+            trs_numbers,
+            dt_numbers,
+            code,
+            tai_char,
+        ),
+    )
 
 # Add sphinxsearch access table
 
-d = 'Dict'
+d = "Dict"
 
 SQL("DROP TABLE IF EXISTS %s_sphinx" % d)
-SQL("""
+SQL(
+    """
     CREATE TABLE %s_sphinx (
     id          BIGINT UNSIGNED NOT NULL,
     weight      INTEGER NOT NULL,
@@ -117,7 +138,9 @@ SQL("""
     group_id    INTEGER,
     INDEX(query)
     ) ENGINE=SPHINX CONNECTION="sphinx://127.0.0.1:9312/%s";
-    """ % (d, d))
+    """
+    % (d, d)
+)
 
 # Commit changes and close connection
 

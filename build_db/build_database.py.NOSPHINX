@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 
-import MySQLdb
 import pickle
 import random
-import xlrd
-from romanization import *
 
 import dotenv
+import MySQLdb
+import xlrd
+
+from romanization import *
 
 dotenv.load_dotenv()
 
 passwd = dotenv.get_key('.env', 'MYSQL_PASSWORD')
 
-# Import dictionary from xls file 
+# Import dictionary from xls file
 
 print('Importing xls file...')
 
@@ -21,12 +22,12 @@ mk_sheet = mk_dict.sheet_by_index(0)
 
 # Connect to database in SQL
 
-conn = MySQLdb.connect(host="localhost", user='root', passwd=passwd, 
+conn = MySQLdb.connect(host="localhost", user='root', passwd=passwd,
                        db='mkdictionary', charset='utf8')
 cursor = conn.cursor()
 SQL = cursor.execute
 
-# (Re)create table 
+# (Re)create table
 
 SQL("DROP TABLE IF EXISTS Dict")
 SQL("""
@@ -47,7 +48,7 @@ SQL("""
     Code        CHAR(4)      NOT NULL,
     Tai_char    VARCHAR(256) CHARACTER SET utf8 COLLATE utf8_unicode_ci,
     PRIMARY KEY (id))
-    """) # ENGINE=MyISAM (at the very end)
+    """)  # ENGINE=MyISAM (at the very end)
 
 
 SQL("ALTER TABLE Dict AUTO_INCREMENT = 2")
@@ -65,24 +66,24 @@ for i in range(1, mk_sheet.nrows):
         print('Writing row %d to mySQL table' % i)
     r = mk_sheet.row(i)
     boolean = int(r[1].value.startswith('::'))
-    
-    #Escape single-quotes
+
+    # Escape single-quotes
     r[3].value = r[3].value.replace("'", "''")
-    #Amend Taiwanese
+    # Amend Taiwanese
     r[1].value = r[1].value.replace('::', '')
     r[1].value = r[1].value.replace('::', '')
     r[1].value = r[1].value.replace('9', '2')
-    #Chinese punctiation police!
+    # Chinese punctiation police!
     r[2].value = r[2].value.replace(' ,', '，')
     r[2].value = r[2].value.replace(' (', '（')
     r[2].value = r[2].value.replace(' )', '）')
     r[2].value = r[2].value.replace('!', '！')
     r[2].value = r[2].value.replace('?', '？')
-    
+
     poj, poj_search, poj_numbers = poj_convert(r[1].value)
     trs, trs_search, trs_numbers = trs_convert(r[1].value)
     dt, dt_search, dt_numbers = dt_convert(r[1].value)
-    
+
     looking = True
     while looking:
         code = ''.join(random.choice(base64) for n in range(4))
@@ -100,8 +101,8 @@ for i in range(1, mk_sheet.nrows):
                           POJ_search, TRS_search, DT_search,
                           POJ_numbers, TRS_numbers, DT_numbers, Code, Tai_char)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (boolean, r[2].value, r[3].value, poj, trs, dt, 
-              poj_search, trs_search, dt_search, 
+        """, (boolean, r[2].value, r[3].value, poj, trs, dt,
+              poj_search, trs_search, dt_search,
               poj_numbers, trs_numbers, dt_numbers, code, tai_char))
 
 # Index for English (FULLTEXT) seach and id
